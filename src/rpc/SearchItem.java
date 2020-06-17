@@ -2,6 +2,7 @@ package rpc;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -13,6 +14,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import db.DBConnection;
+import db.DBConnectionFactory;
 import entity.Item;
 import external.TicketMasterAPI;
 
@@ -39,18 +42,25 @@ public class SearchItem extends HttpServlet {
 			throws ServletException, IOException {
 		// TODO Auto-generated method stub
 		
-		
+		String userId = request.getParameter("user_id");
 		
 		JSONArray array = new JSONArray();
 		try {
 			double lat = Double.parseDouble(request.getParameter("lat"));
 			double lon = Double.parseDouble(request.getParameter("lon"));
 			String keyword = request.getParameter("term");
-			TicketMasterAPI tmAPI = new TicketMasterAPI();
-			List<Item>items = tmAPI.search(lat, lon, keyword);
+			
+			DBConnection connection = DBConnectionFactory.getConnection();
+			List<Item> items = connection.searchItems(lat, lon, keyword);
+			
+			
+			Set<String> favorite = connection.getFavoriteItemIds(userId);
+			connection.close();
 			
 			for(Item item:items) {
 				JSONObject obj = item.toJSONObject();
+				obj.put("favorite", favorite.contains(item.getItemId()));
+				
 				array.put(obj);
 			}
 			
